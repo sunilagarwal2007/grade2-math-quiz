@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 2 Math Quiz Game</title>
+  <style>
+    body { font-family: 'Comic Sans MS', cursive, sans-serif; background: #f0f8ff; padding: 20px; text-align: center; }
+    .question-box { background: white; padding: 20px; margin: 20px auto; width: 60%; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 10px; }
+    .choices button { display: block; width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; transition: 0.3s; }
+    .choices button:hover { background-color: #e0f7fa; }
+    .score { font-size: 20px; margin-top: 20px; }
+    .hidden { display: none; }
+    #question-img { max-width: 100%; height: auto; margin: 10px 0; }
+    #review { text-align: left; margin-top: 30px; background: #fff9c4; padding: 15px; border-radius: 10px; border: 2px dashed #fbc02d; }
+    #review h3 { color: #f57f17; text-align: center; }
+    #wrongAnswers li { background: #ffecb3; padding: 10px; margin-bottom: 10px; border-radius: 8px; list-style: none; box-shadow: 1px 1px 5px rgba(0,0,0,0.1); }
+    #wrongAnswers li strong { color: #d84315; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div id="startScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=1950&q=80') no-repeat center center / cover; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;">
+    <h1>Welcome to the Grade 2 Math Quiz!</h1>
+    <button onclick="startQuiz()" style="padding: 15px 30px; font-size: 18px;">Start Quiz</button>
+  </div>
+
+  <audio id="introMusic" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" autoplay loop></audio>
+  <audio id="clapSound" src="https://actions.google.com/sounds/v1/crowd/applause.ogg"></audio>
+  <audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+  <h1>Grade 2 Math Quiz Game</h1>
+  <div class="score" id="scoreTop" style="font-size: 20px; font-weight: bold; background: #e0f7fa; padding: 10px; border-radius: 8px; display: inline-block;">Score: 0</div>
+  <div id="progress" style="display: none; background: linear-gradient(to right, #81d4fa, #29b6f6); padding: 8px; border-radius: 5px; margin: 10px 0; color: #003c8f; font-weight: bold; font-size: 18px; text-shadow: 0 1px #fff;">Question 1 of 0</div>
+  <div id="quiz" class="question-box hidden">
+    <div id="question"></div>
+    <img id="question-img" class="hidden" src="" alt="Question Image">
+    <div id="choices" class="choices"></div>
+    <div class="score" id="score">Score: 0</div>
+    <button onclick="submitAnswer()" id="submitBtn">Submit Answer</button>
+    <button onclick="nextQuestion()" id="nextBtn" class="hidden">Next Question</button>
+  </div>
+
+  <div id="review" class="hidden">
+    <h3>📝 Let's Review the Missed Questions!</h3>
+    <ul id="wrongAnswers"></ul>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('introMusic').volume = 0.3;
+    });
+
+  const quizData = [
+  { question: "What is 7 + 5?", choices: [10, 12, 14, 13], answer: 12 },
+  { question: "What is 15 - 6?", choices: [11, 9, 8, 10], answer: 9 },
+  { question: "What is 9 + 8?", choices: [16, 18, 17, 19], answer: 17 },
+  { question: "What is 13 - 4?", choices: [9, 7, 8, 10], answer: 9 },
+  { question: "What is 6 + 6?", choices: [11, 13, 12, 10], answer: 12 },
+  { question: "What is the value of 3 in 32?", choices: [30, 3, 13, 23], answer: 30 },
+  { question: "What number has 4 tens and 7 ones?", choices: [47, 74, 407, 40], answer: 47 },
+  { question: "What is the place value of 6 in 64?", choices: [6, 60, 600, 46], answer: 60 },
+  { question: "What is 5 tens and 2 ones?", choices: [25, 52, 502, 205], answer: 52 },
+  { question: "What is the digit in the tens place of 81?", choices: [1, 8, 0, 18], answer: 8 },
+  { question: "What is 40 + 60?", choices: [90, 100, 110, 120], answer: 100 },
+  { question: "What is 100 - 75?", choices: [20, 25, 15, 30], answer: 25 },
+  { question: "What is 4 x 5?", choices: [9, 20, 10, 15], answer: 20 },
+  { question: "Which shape has 4 equal sides?", choices: ["Square", "Triangle", "Circle", "Rectangle"], answer: "Square" },
+  { question: "What is 10 ÷ 2?", choices: [2, 5, 4, 6], answer: 5 },
+  { question: "Which is heavier?", choices: ["Feather", "Elephant", "Ball", "Bottle"], answer: "Elephant" },
+  { question: "How many legs does a spider have?", choices: [6, 8, 10, 12], answer: 8 },
+  { question: "What coin is worth 25 cents?", choices: ["Nickel", "Dime", "Penny", "Quarter"], answer: "Quarter" },
+  { question: "How many hours in a day?", choices: [12, 24, 48, 36], answer: 24 },
+  { question: "What is 5 x 2?", choices: [10, 7, 15, 5], answer: 10 },
+  { question: "How many sides does a triangle have?", choices: [3, 4, 5, 6], answer: 3 },
+  { question: "Which number is even?", choices: [3, 7, 4, 9], answer: 4 },
+  { question: "What is 8 more than 22?", choices: [30, 31, 28, 29], answer: 30 },
+  { question: "How many inches in a foot?", choices: [10, 11, 12, 13], answer: 12 },
+  { question: "What is 50 - 25?", choices: [15, 20, 25, 30], answer: 25 },
+  { question: "How many seasons in a year?", choices: [2, 3, 4, 5], answer: 4 },
+  { question: "Which number is greater? 67 or 76?", choices: [67, 76, 66, 68], answer: 76 },
+  { question: "Which clock shows 3:00?", choices: ["Long hand on 12, short on 3", "Short on 6", "Both on 3", "Short on 9"], answer: "Long hand on 12, short on 3" },
+  { question: "What shape is a pizza?", choices: ["Square", "Circle", "Triangle", "Rectangle"], answer: "Circle" },
+  { question: "What is the value of 9 in 92?", choices: [9, 90, 2, 91], answer: 90 },
+  { question: "What is 3 tens and 4 ones?", choices: [34, 43, 30, 14], answer: 34 },
+  { question: "What comes next: 2, 4, 6, ?", choices: [7, 8, 9, 10], answer: 8 },
+  { question: "What is the missing number: 45, __, 65?", choices: [55, 50, 60, 70], answer: 55 },
+  { question: "What is 11 + 12?", choices: [22, 23, 21, 24], answer: 23 },
+  { question: "What is half of 20?", choices: [5, 8, 10, 12], answer: 10 },
+  { question: "What day comes after Monday?", choices: ["Tuesday", "Wednesday", "Sunday", "Friday"], answer: "Tuesday" },
+  { question: "What is the smallest 2-digit number?", choices: [9, 10, 11, 12], answer: 10 },
+  { question: "What is the sum of 4 and 6?", choices: [9, 10, 11, 12], answer: 10 },
+  { question: "What is 70 - 20?", choices: [50, 40, 60, 30], answer: 50 },
+  { question: "Which number is odd?", choices: [2, 4, 6, 9], answer: 9 },
+  { question: "What is 3 x 3?", choices: [6, 9, 12, 8], answer: 9 },
+  { question: "What is the next number after 109?", choices: [110, 111, 108, 112], answer: 110 },
+  { question: "How many hours in half a day?", choices: [6, 10, 12, 24], answer: 12 },
+  { question: "What is 6 x 2?", choices: [10, 12, 14, 16], answer: 12 },
+  { question: "Which is longer: yard or foot?", choices: ["Yard", "Foot", "Inch", "Meter"], answer: "Yard" },
+  { question: "Which month comes after April?", choices: ["March", "May", "June", "July"], answer: "May" },
+  { question: "What time is it if the clock shows long hand on 12, short on 7?", choices: ["6:00", "7:00", "8:00", "9:00"], answer: "7:00" },
+  { question: "Which number comes before 50?", choices: [48, 49, 50, 51], answer: 49 }
+];
+
+     // Populate as needed
+    let currentQuestion = 0;
+    let score = 0;
+    const wrongAnswersList = [];
+
+    function startQuiz() {
+      document.getElementById('introMusic').pause();
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('quiz').classList.remove('hidden');
+      document.getElementById('progress').style.display = 'block';
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = quizData[currentQuestion];
+      document.getElementById('progress').innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
+      document.getElementById('question').innerText = q.question;
+      const img = document.getElementById('question-img');
+      if (q.img) {
+        img.src = q.img;
+        img.classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+      }
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      q.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.innerText = choice;
+        btn.classList.add('choice-btn');
+        btn.onclick = () => {
+          document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+          btn.classList.add('submitted');
+        };
+        choicesDiv.appendChild(btn);
+      });
+      document.getElementById('submitBtn').classList.remove('hidden');
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function submitAnswer() {
+      const selected = document.querySelector('.submitted');
+      if (!selected) return;
+      const userAnswer = selected.innerText;
+      const correctAnswer = quizData[currentQuestion].answer;
+
+      if (userAnswer === correctAnswer.toString()) {
+        score += 10;
+        document.getElementById('correctSound').play();
+        document.getElementById('clapSound').play();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      } else {
+        document.getElementById('wrongSound').play();
+        wrongAnswersList.push({ question: quizData[currentQuestion].question, yourAnswer: userAnswer, correctAnswer });
+      }
+
+      document.getElementById('score').innerText = 'Score: ' + score;
+      document.getElementById('scoreTop').innerText = 'Score: ' + score;
+      document.getElementById('submitBtn').classList.add('hidden');
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < quizData.length) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      document.getElementById('quiz').innerHTML = '<h2>🎉 Quiz Completed!</h2><p>Your Final Score: ' + score + ' out of ' + (quizData.length * 10) + '</p>';
+      if (wrongAnswersList.length > 0) {
+        document.getElementById('review').classList.remove('hidden');
+        const reviewList = document.getElementById('wrongAnswers');
+        reviewList.innerHTML = '';
+        wrongAnswersList.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>Q:</strong> ${item.question}<br><strong>❌ Your Answer:</strong> ${item.yourAnswer}<br><strong>✅ Correct:</strong> ${item.correctAnswer}`;
+          reviewList.appendChild(li);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
