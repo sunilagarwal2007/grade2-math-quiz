@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 2 Math Quiz Game</title>
+  <style>
+    body { font-family: 'Comic Sans MS', 'Chalkboard', 'Arial', cursive, sans-serif; background: #f0f8ff; padding: 20px; text-align: center; }
+    .question-box { background: white; padding: 20px; margin: 20px auto; width: 60%; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 10px; }
+    .choices button { display: block; width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; transition: 0.3s; }
+    .choices button:hover { background-color: #e0f7fa; }
+    .score { font-size: 20px; margin-top: 20px; }
+    .hidden { display: none; }
+    #question-img { max-width: 100%; height: auto; margin: 10px 0; }
+    #review { text-align: left; margin-top: 30px; background: #fff9c4; padding: 15px; border-radius: 10px; border: 2px dashed #fbc02d; }
+    #review h3 { color: #f57f17; text-align: center; }
+    #wrongAnswers li { background: #ffecb3; padding: 10px; margin-bottom: 10px; border-radius: 8px; list-style: none; box-shadow: 1px 1px 5px rgba(0,0,0,0.1); }
+    #wrongAnswers li strong { color: #d84315; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div id="startScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=1950&q=80') no-repeat center center / cover; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;">
+    <h1>Welcome to the Grade 2 Math Quiz!</h1>
+    <button onclick="startQuiz()" style="padding: 15px 30px; font-size: 25px;">Start Quiz</button>
+  </div>
+
+  <audio id="introMusic" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" autoplay loop></audio>
+  <audio id="clapSound" src="https://actions.google.com/sounds/v1/crowd/applause.ogg"></audio>
+<!--
+<audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+-->
+  <audio id="correctSound" src="https://sunilagarwal2007.github.io/grade2-math-quiz/audio/correct-answer.mp3"></audio>
+  <audio id="wrongSound" src="https://sunilagarwal2007.github.io/grade2-math-quiz/audio/wrong-answer.mp3"></audio>
+
+  <h1>Grade 2 Math Quiz Game</h1>
+  <div class="score" id="scoreTop" style="font-size: 20px; font-weight: bold; background: #e0f7fa; padding: 10px; border-radius: 8px; display: inline-block;">Score: 0</div>
+  <div id="progress" style="display: none; background: linear-gradient(to right, #81d4fa, #29b6f6); padding: 8px; border-radius: 5px; margin: 10px 0; color: #003c8f; font-weight: bold; font-size: 18px; text-shadow: 0 1px #fff;">Question 1 of 0</div>
+  <div id="quiz" class="question-box hidden">
+    <div id="question"></div>
+    <img id="question-img" class="hidden" src="" alt="Question Image">
+    <div id="choices" class="choices"></div>
+    <div class="score" id="score">Score: 0</div>
+    <button onclick="submitAnswer()" id="submitBtn">Submit Answer</button>
+    <button onclick="nextQuestion()" id="nextBtn" class="hidden">Next Question</button>
+  </div>
+
+  <div id="review" class="hidden">
+    <h3>📝 Let's Review the Missed Questions!</h3>
+    <ul id="wrongAnswers"></ul>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('introMusic').volume = 0.3;
+    });
+
+  const quizData =       
+ [
+   { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "What is 41 + 39?", choices: ['80', '77', '84', '85'], answer: "80" },
+  { question: "Which shape has 3 sides?", choices: ['Triangle', 'Square', 'Circle', 'Rectangle'], answer: "Triangle" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which shape is round?", choices: ['Square', 'Circle', 'Triangle', 'Hexagon'], answer: "Circle" },
+  { question: "How many minutes in an hour?", choices: ['30', '45', '60', '90'], answer: "60" },
+  { question: "What comes after 10?", choices: ['10', '12', '13', '11'], answer: "11" },
+  { question: "What is 82 - 73?", choices: ['9', '8', '11', '12'], answer: "9" },
+  { question: "What is 35 - 25?", choices: ['6', '9', '11', '10'], answer: "10" },
+  { question: "What is 98 - 29?", choices: ['65', '68', '69', '73'], answer: "69" },
+  { question: "What is 10 x 3?", choices: ['30', '31', '32', '35'], answer: "30" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "What is 7 x 5?", choices: ['34', '35', '37', '40'], answer: "35" },
+  { question: "What comes after 48?", choices: ['48', '49', '50', '52'], answer: "49" },
+  { question: "What is 20 - 19?", choices: ['-3', '-2', '4', '1'], answer: "1" },
+  { question: "What is 37 + 3?", choices: ['35', '37', '39', '40'], answer: "40" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which is greater: 53 or 16?", choices: ['53', '16', 'Both', 'None'], answer: "53" },
+  { question: "Which shape has 3 sides?", choices: ['Triangle', 'Square', 'Circle', 'Rectangle'], answer: "Triangle" },
+  { question: "What is 88 - 16?", choices: ['69', '71', '72', '76'], answer: "72" },
+  { question: "How many hours in a day?", choices: ['12', '24', '36', '48'], answer: "24" },
+  { question: "What is 49 + 40?", choices: ['84', '87', '89', '94'], answer: "89" },
+  { question: "What is 47 - 9?", choices: ['36', '38', '41', '42'], answer: "38" },
+  { question: "What is 4 + 35?", choices: ['35', '39', '40', '41'], answer: "39" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "Which is greater: 71 or 65?", choices: ['71', '65', 'Both', 'None'], answer: "71" },
+  { question: "What is 22 + 46?", choices: ['65', '70', '71', '68'], answer: "68" },
+  { question: "What is 10 - 6?", choices: ['4', '3', '7', '9'], answer: "4" },
+  { question: "Which is greater: 17 or 68?", choices: ['17', '68', 'Both', 'None'], answer: "68" },
+  { question: "Which is greater: 13 or 71?", choices: ['13', '71', 'Both', 'None'], answer: "71" },
+  { question: "What comes after 33?", choices: ['33', '34', '36', '37'], answer: "34" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "What is 59 - 38?", choices: ['17', '21', '20', '22'], answer: "21" },
+  { question: "What is 71 - 37?", choices: ['31', '34', '35', '37'], answer: "34" },
+  { question: "What is 66 - 48?", choices: ['13', '20', '22', '18'], answer: "18" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "What is 60 - 26?", choices: ['29', '34', '32', '36'], answer: "34" },
+  { question: "Which is greater: 96 or 96?", choices: ['96', '96', 'Both', 'None'], answer: "96" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "What comes after 30?", choices: ['29', '30', '31', '34'], answer: "31" },
+  { question: "What comes after 77?", choices: ['78', '79', '80', '81'], answer: "78" },
+  { question: "What comes after 54?", choices: ['54', '55', '57', '58'], answer: "55" },
+  { question: "What is 8 x 3?", choices: ['21', '24', '27', '28'], answer: "24" },
+  { question: "What comes after 57?", choices: ['56', '58', '60', '61'], answer: "58" },
+  { question: "What is 8 x 6?", choices: ['46', '48', '50', '52'], answer: "48" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "Which shape has 3 sides?", choices: ['Triangle', 'Square', 'Circle', 'Rectangle'], answer: "Triangle" },
+  { question: "What is 8 + 16?", choices: ['21', '22', '24', '25'], answer: "24" },
+  { question: "What is 6 x 1?", choices: ['6', '4', '5', '8'], answer: "6" },
+  { question: "What is 19 + 13?", choices: ['27', '32', '33', '36'], answer: "32" },
+  { question: "What is 6 x 4?", choices: ['20', '24', '25', '28'], answer: "24" },
+  { question: "What is 7 + 11?", choices: ['13', '15', '18', '22'], answer: "18" },
+  { question: "What is 43 + 48?", choices: ['86', '88', '91', '94'], answer: "91" },
+  { question: "What is 43 + 38?", choices: ['81', '78', '80', '84'], answer: "81" },
+  { question: "What comes after 37?", choices: ['36', '37', '40', '38'], answer: "38" },
+  { question: "What is 4 x 8?", choices: ['29', '31', '32', '35'], answer: "32" },
+  { question: "Which is greater: 19 or 40?", choices: ['19', '40', 'Both', 'None'], answer: "40" },
+  { question: "What is 100 - 22?", choices: ['76', '79', '78', '83'], answer: "78" },
+  { question: "Which is greater: 36 or 86?", choices: ['36', '86', 'Both', 'None'], answer: "86" },
+  { question: "What is 32 + 49?", choices: ['80', '81', '82', '84'], answer: "81" },
+  { question: "What comes after 63?", choices: ['62', '64', '66', '67'], answer: "64" },
+  { question: "What is 4 x 8?", choices: ['27', '30', '32', '33'], answer: "32" },
+  { question: "Which shape has 3 sides?", choices: ['Triangle', 'Square', 'Circle', 'Rectangle'], answer: "Triangle" },
+  { question: "What is 71 - 18?", choices: ['48', '53', '52', '57'], answer: "53" },
+  { question: "Which is greater: 32 or 94?", choices: ['32', '94', 'Both', 'None'], answer: "94" },
+  { question: "How many minutes in an hour?", choices: ['30', '45', '60', '90'], answer: "60" },
+  { question: "What is 7 x 9?", choices: ['63', '64', '66', '68'], answer: "63" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "Which is greater: 31 or 88?", choices: ['31', '88', 'Both', 'None'], answer: "88" },
+  { question: "How many hours in a day?", choices: ['12', '24', '36', '48'], answer: "24" },
+  { question: "What is 3 x 5?", choices: ['11', '14', '18', '15'], answer: "15" },
+  { question: "Which is greater: 48 or 97?", choices: ['48', '97', 'Both', 'None'], answer: "97" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "What is 26 + 24?", choices: ['45', '50', '47', '48'], answer: "50" },
+  { question: "Which shape is round?", choices: ['Square', 'Circle', 'Triangle', 'Hexagon'], answer: "Circle" },
+  { question: "What is 97 - 72?", choices: ['20', '21', '24', '25'], answer: "25" },
+  { question: "What comes after 38?", choices: ['38', '39', '40', '41'], answer: "39" },
+  { question: "What is 41 + 49?", choices: ['85', '87', '90', '93'], answer: "90" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "What comes after 20?", choices: ['20', '21', '23', '24'], answer: "21" },
+  { question: "What is 31 + 32?", choices: ['58', '59', '63', '67'], answer: "63" },
+  { question: "What is 6 x 7?", choices: ['37', '38', '39', '42'], answer: "42" },
+  { question: "Which shape has 3 sides?", choices: ['Triangle', 'Square', 'Circle', 'Rectangle'], answer: "Triangle" },
+  { question: "Which shape has 4 equal sides?", choices: ['Rectangle', 'Square', 'Triangle', 'Pentagon'], answer: "Square" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" },
+  { question: "What comes after 9?", choices: ['8', '10', '11', '13'], answer: "10" },
+  { question: "What is 9 x 2?", choices: ['18', '19', '21', '22'], answer: "18" },
+  { question: "Which is greater: 41 or 10?", choices: ['41', '10', 'Both', 'None'], answer: "41" },
+  { question: "Which shape is round?", choices: ['Square', 'Circle', 'Triangle', 'Hexagon'], answer: "Circle" },
+  { question: "How many minutes in an hour?", choices: ['30', '45', '60', '90'], answer: "60" },
+  { question: "What is 32 + 5?", choices: ['33', '37', '38', '41'], answer: "37" },
+  { question: "Which is greater: 13 or 96?", choices: ['13', '96', 'Both', 'None'], answer: "96" },
+  { question: "Which is greater: 64 or 67?", choices: ['64', '67', 'Both', 'None'], answer: "67" },
+  { question: "What comes after 28?", choices: ['28', '29', '31', '32'], answer: "29" },
+  { question: "What is 13 + 19?", choices: ['29', '31', '36', '32'], answer: "32" },
+  { question: "How many minutes in an hour?", choices: ['30', '45', '60', '90'], answer: "60" },
+  { question: "How many days in a week?", choices: ['5', '6', '7', '8'], answer: "7" }
+];
+
+     // Populate as needed
+    let currentQuestion = 0;
+    let score = 0;
+    const wrongAnswersList = [];
+
+    function startQuiz() {
+      document.getElementById('introMusic').pause();
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('quiz').classList.remove('hidden');
+      document.getElementById('progress').style.display = 'block';
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = quizData[currentQuestion];
+      document.getElementById('progress').innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
+      document.getElementById('question').innerText = q.question;
+      const img = document.getElementById('question-img');
+      if (q.img) {
+        img.src = q.img;
+        img.classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+      }
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      q.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.innerText = choice;
+        btn.classList.add('choice-btn');
+        btn.onclick = () => {
+          document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+          btn.classList.add('submitted');
+        };
+        choicesDiv.appendChild(btn);
+      });
+      document.getElementById('submitBtn').classList.remove('hidden');
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function submitAnswer() {
+      const selected = document.querySelector('.submitted');
+      if (!selected) return;
+      const userAnswer = selected.innerText;
+      const correctAnswer = quizData[currentQuestion].answer;
+
+      if (userAnswer === correctAnswer.toString()) {
+        score += 10;
+        document.getElementById('correctSound').play();
+        document.getElementById('clapSound').play();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      } else {
+        document.getElementById('wrongSound').play();
+        wrongAnswersList.push({ question: quizData[currentQuestion].question, yourAnswer: userAnswer, correctAnswer });
+      }
+
+      document.getElementById('score').innerText = 'Score: ' + score;
+      document.getElementById('scoreTop').innerText = 'Score: ' + score;
+      document.getElementById('submitBtn').classList.add('hidden');
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < quizData.length) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      document.getElementById('quiz').innerHTML = '<h2>🎉 Quiz Completed!</h2><p>Your Final Score: ' + score + ' out of ' + (quizData.length * 10) + '</p>';
+      if (wrongAnswersList.length > 0) {
+        document.getElementById('review').classList.remove('hidden');
+        const reviewList = document.getElementById('wrongAnswers');
+        reviewList.innerHTML = '';
+        wrongAnswersList.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>Q:</strong> ${item.question}<br><strong>❌ Your Answer:</strong> ${item.yourAnswer}<br><strong>✅ Correct:</strong> ${item.correctAnswer}`;
+          reviewList.appendChild(li);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
