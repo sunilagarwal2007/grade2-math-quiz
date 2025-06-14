@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 2 Math Quiz Game</title>
+  <style>
+    body { font-family: 'Comic Sans MS', 'Chalkboard', 'Arial', cursive, sans-serif; background: #f0f8ff; padding: 20px; text-align: center; }
+    .question-box { background: white; padding: 20px; margin: 20px auto; width: 60%; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 10px; }
+    .choices button { display: block; width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; transition: 0.3s; }
+    .choices button:hover { background-color: #e0f7fa; }
+    .score { font-size: 20px; margin-top: 20px; }
+    .hidden { display: none; }
+    #question-img { max-width: 100%; height: auto; margin: 10px 0; }
+    #review { text-align: left; margin-top: 30px; background: #fff9c4; padding: 15px; border-radius: 10px; border: 2px dashed #fbc02d; }
+    #review h3 { color: #f57f17; text-align: center; }
+    #wrongAnswers li { background: #ffecb3; padding: 10px; margin-bottom: 10px; border-radius: 8px; list-style: none; box-shadow: 1px 1px 5px rgba(0,0,0,0.1); }
+    #wrongAnswers li strong { color: #d84315; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div id="startScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=1950&q=80') no-repeat center center / cover; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;">
+    <h1>Welcome to the Grade 2 Math Quiz!</h1>
+    <button onclick="startQuiz()" style="padding: 15px 30px; font-size: 25px;">Start Quiz</button>
+  </div>
+
+  <audio id="introMusic" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" autoplay loop></audio>
+  <audio id="clapSound" src="https://actions.google.com/sounds/v1/crowd/applause.ogg"></audio>
+<!--
+<audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+-->
+  <audio id="correctSound" src="https://sunilagarwal2007.github.io/grade2-math-quiz/audio/correct-answer.mp3"></audio>
+  <audio id="wrongSound" src="https://sunilagarwal2007.github.io/grade2-math-quiz/audio/wrong-answer.mp3"></audio>
+
+  <h1>Grade 2 Math Quiz Game</h1>
+  <div class="score" id="scoreTop" style="font-size: 20px; font-weight: bold; background: #e0f7fa; padding: 10px; border-radius: 8px; display: inline-block;">Score: 0</div>
+  <div id="progress" style="display: none; background: linear-gradient(to right, #81d4fa, #29b6f6); padding: 8px; border-radius: 5px; margin: 10px 0; color: #003c8f; font-weight: bold; font-size: 18px; text-shadow: 0 1px #fff;">Question 1 of 0</div>
+  <div id="quiz" class="question-box hidden">
+    <div id="question"></div>
+    <img id="question-img" class="hidden" src="" alt="Question Image">
+    <div id="choices" class="choices"></div>
+    <div class="score" id="score">Score: 0</div>
+    <button onclick="submitAnswer()" id="submitBtn">Submit Answer</button>
+    <button onclick="nextQuestion()" id="nextBtn" class="hidden">Next Question</button>
+  </div>
+
+  <div id="review" class="hidden">
+    <h3>📝 Let's Review the Missed Questions!</h3>
+    <ul id="wrongAnswers"></ul>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('introMusic').volume = 0.3;
+    });
+
+  const quizData =       
+ [
+   { question: "What is 11 x 5?", choices: ['64', '57', '55', '62'], answer: "55" },
+  { question: "How many days in February (non-leap year)?", choices: ['30', '29', '28', '31'], answer: "28" },
+  { question: "How many seconds in a minute?", choices: ['45', '60', '90', '30'], answer: "60" },
+  { question: "What is 3 x 5?", choices: ['7', '22', '15', '5'], answer: "15" },
+  { question: "What is 9 x 11?", choices: ['100', '99', '97', '90'], answer: "99" },
+  { question: "What is 42 + 15?", choices: ['60', '57', '65', '47'], answer: "57" },
+  { question: "What is 8 x 2?", choices: ['19', '16', '6', '12'], answer: "16" },
+  { question: "Which is greater: 62 or 19?", choices: ['Both', '19', '62', 'None'], answer: "62" },
+  { question: "What is 10 x 9?", choices: ['87', '91', '90', '93'], answer: "90" },
+  { question: "What is 6 x 5?", choices: ['30', '35', '37', '21'], answer: "30" },
+  { question: "Which is greater: 98 or 98?", choices: ['Both', '98', 'None', '98'], answer: "98" },
+  { question: "What is 8 x 8?", choices: ['67', '73', '64', '62'], answer: "64" },
+  { question: "What is 2 x 3?", choices: ['9', '14', '6', '1'], answer: "6" },
+  { question: "What is 8 x 7?", choices: ['65', '51', '56', '60'], answer: "56" },
+  { question: "What is 62 - 9?", choices: ['52', '53', '49', '45'], answer: "53" },
+  { question: "What is 21 + 48?", choices: ['74', '59', '60', '69'], answer: "69" },
+  { question: "What comes after 61?", choices: ['64', '63', '62', '61'], answer: "62" },
+  { question: "Which is greater: 14 or 48?", choices: ['None', '14', '48', 'Both'], answer: "48" },
+  { question: "Which shape has 5 sides?", choices: ['Circle', 'Triangle', 'Hexagon', 'Pentagon'], answer: "Pentagon" },
+  { question: "What is 64 - 9?", choices: ['52', '47', '63', '55'], answer: "55" },
+  { question: "Which is greater: 48 or 51?", choices: ['48', 'Both', 'None', '51'], answer: "51" },
+  { question: "What is 42 + 26?", choices: ['68', '74', '75', '63'], answer: "68" },
+  { question: "Which shape has no corners?", choices: ['Circle', 'Triangle', 'Square', 'Octagon'], answer: "Circle" },
+  { question: "What is 9 x 9?", choices: ['84', '89', '74', '81'], answer: "81" },
+  { question: "Which is greater: 59 or 74?", choices: ['59', '74', 'Both', 'None'], answer: "74" },
+  { question: "What is 36 + 14?", choices: ['50', '40', '51', '56'], answer: "50" },
+  { question: "What is 36 + 29?", choices: ['69', '74', '65', '61'], answer: "65" },
+  { question: "What comes after 73?", choices: ['73', '74', '75', '76'], answer: "74" },
+  { question: "Which is greater: 66 or 73?", choices: ['73', 'Both', 'None', '66'], answer: "73" },
+  { question: "What is 18 + 38?", choices: ['49', '56', '57', '63'], answer: "56" },
+  { question: "What comes after 51?", choices: ['51', '55', '52', '54'], answer: "52" },
+  { question: "What is 6 x 2?", choices: ['6', '5', '12', '21'], answer: "12" },
+  { question: "What is 16 - 8?", choices: ['2', '12', '17', '8'], answer: "8" },
+  { question: "What comes after 67?", choices: ['67', '69', '68', '71'], answer: "68" },
+  { question: "What is 42 + 2?", choices: ['51', '40', '36', '44'], answer: "44" },
+  { question: "What is 21 + 26?", choices: ['56', '48', '47', '44'], answer: "47" },
+  { question: "What is 20 + 25?", choices: ['45', '51', '46', '53'], answer: "45" },
+  { question: "Which is greater: 45 or 83?", choices: ['None', 'Both', '45', '83'], answer: "83" },
+  { question: "Which is greater: 54 or 33?", choices: ['33', '54', 'Both', 'None'], answer: "54" },
+  { question: "What is 3 x 4?", choices: ['8', '16', '12', '10'], answer: "12" },
+  { question: "Which is greater: 28 or 43?", choices: ['None', 'Both', '43', '28'], answer: "43" },
+  { question: "What is 29 + 6?", choices: ['39', '35', '26', '37'], answer: "35" },
+  { question: "What comes after 69?", choices: ['72', '69', '70', '71'], answer: "70" },
+  { question: "What is 40 + 48?", choices: ['88', '89', '85', '78'], answer: "88" },
+  { question: "What is 35 - 9?", choices: ['20', '16', '24', '26'], answer: "26" },
+  { question: "Which is greater: 16 or 84?", choices: ['None', 'Both', '16', '84'], answer: "84" },
+  { question: "How many weeks in a year?", choices: ['48', '54', '50', '52'], answer: "52" },
+  { question: "What is 3 x 9?", choices: ['24', '35', '27', '21'], answer: "27" },
+  { question: "What is 15 - 9?", choices: ['6', '12', '2', '-4'], answer: "6" },
+  { question: "What is 11 x 3?", choices: ['33', '35', '26', '39'], answer: "33" },
+  { question: "Which is greater: 28 or 42?", choices: ['None', '28', '42', 'Both'], answer: "42" },
+  { question: "Which is greater: 18 or 59?", choices: ['None', 'Both', '59', '18'], answer: "59" },
+  { question: "What comes after 66?", choices: ['70', '69', '66', '67'], answer: "67" },
+  { question: "What is 24 - 8?", choices: ['23', '24', '25', '16'], answer: "16" },
+  { question: "What comes after 47?", choices: ['47', '51', '49', '48'], answer: "48" },
+  { question: "What is 73 - 5?", choices: ['60', '59', '68', '61'], answer: "68" },
+  { question: "Which is greater: 53 or 29?", choices: ['29', '53', 'Both', 'None'], answer: "53" },
+  { question: "What is 75 - 3?", choices: ['72', '67', '73', '68'], answer: "72" },
+  { question: "What comes after 17?", choices: ['18', '20', '21', '17'], answer: "18" },
+  { question: "What is 49 + 16?", choices: ['56', '65', '62', '70'], answer: "65" },
+  { question: "What comes after 57?", choices: ['60', '58', '59', '61'], answer: "58" },
+  { question: "What comes after 75?", choices: ['78', '75', '76', '79'], answer: "76" },
+  { question: "What is 50 - 4?", choices: ['53', '52', '46', '47'], answer: "46" },
+  { question: "What is 18 + 6?", choices: ['17', '16', '29', '24'], answer: "24" },
+  { question: "What is 29 - 5?", choices: ['17', '28', '26', '24'], answer: "24" },
+  { question: "Which shape is a closed curve?", choices: ['Hexagon', 'Square', 'Circle', 'Rectangle'], answer: "Circle" },
+  { question: "What is 92 - 3?", choices: ['95', '89', '80', '97'], answer: "89" },
+  { question: "What is 41 + 38?", choices: ['77', '72', '78', '79'], answer: "79" },
+  { question: "What comes after 30?", choices: ['30', '31', '32', '33'], answer: "31" },
+  { question: "What is 88 - 6?", choices: ['82', '78', '90', '75'], answer: "82" },
+  { question: "What is 82 - 6?", choices: ['78', '69', '76', '72'], answer: "76" },
+  { question: "What is 74 - 1?", choices: ['79', '66', '67', '73'], answer: "73" },
+  { question: "What is 80 - 8?", choices: ['76', '77', '75', '72'], answer: "72" },
+  { question: "Which is greater: 60 or 10?", choices: ['60', 'None', '10', 'Both'], answer: "60" },
+  { question: "What is 92 - 6?", choices: ['95', '92', '86', '85'], answer: "86" },
+  { question: "What comes after 41?", choices: ['45', '44', '43', '42'], answer: "42" },
+  { question: "What comes after 40?", choices: ['41', '43', '40', '44'], answer: "41" },
+  { question: "What is 7 x 3?", choices: ['14', '21', '15', '12'], answer: "21" },
+  { question: "What is 4 x 2?", choices: ['3', '8', '15', '16'], answer: "8" },
+  { question: "What is 6 + 29?", choices: ['42', '41', '44', '35'], answer: "35" },
+  { question: "What is 23 + 9?", choices: ['38', '34', '30', '32'], answer: "32" },
+  { question: "What comes after 28?", choices: ['29', '28', '30', '32'], answer: "29" }
+];
+
+     // Populate as needed
+    let currentQuestion = 0;
+    let score = 0;
+    const wrongAnswersList = [];
+
+    function startQuiz() {
+      document.getElementById('introMusic').pause();
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('quiz').classList.remove('hidden');
+      document.getElementById('progress').style.display = 'block';
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = quizData[currentQuestion];
+      document.getElementById('progress').innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
+      document.getElementById('question').innerText = q.question;
+      const img = document.getElementById('question-img');
+      if (q.img) {
+        img.src = q.img;
+        img.classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+      }
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      q.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.innerText = choice;
+        btn.classList.add('choice-btn');
+        btn.onclick = () => {
+          document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+          btn.classList.add('submitted');
+        };
+        choicesDiv.appendChild(btn);
+      });
+      document.getElementById('submitBtn').classList.remove('hidden');
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function submitAnswer() {
+      const selected = document.querySelector('.submitted');
+      if (!selected) return;
+      const userAnswer = selected.innerText;
+      const correctAnswer = quizData[currentQuestion].answer;
+
+      if (userAnswer === correctAnswer.toString()) {
+        score += 10;
+        document.getElementById('correctSound').play();
+        document.getElementById('clapSound').play();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      } else {
+        document.getElementById('wrongSound').play();
+        wrongAnswersList.push({ question: quizData[currentQuestion].question, yourAnswer: userAnswer, correctAnswer });
+      }
+
+      document.getElementById('score').innerText = 'Score: ' + score;
+      document.getElementById('scoreTop').innerText = 'Score: ' + score;
+      document.getElementById('submitBtn').classList.add('hidden');
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < quizData.length) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      document.getElementById('quiz').innerHTML = '<h2>🎉 Quiz Completed!</h2><p>Your Final Score: ' + score + ' out of ' + (quizData.length * 10) + '</p>';
+      if (wrongAnswersList.length > 0) {
+        document.getElementById('review').classList.remove('hidden');
+        const reviewList = document.getElementById('wrongAnswers');
+        reviewList.innerHTML = '';
+        wrongAnswersList.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>Q:</strong> ${item.question}<br><strong>❌ Your Answer:</strong> ${item.yourAnswer}<br><strong>✅ Correct:</strong> ${item.correctAnswer}`;
+          reviewList.appendChild(li);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
